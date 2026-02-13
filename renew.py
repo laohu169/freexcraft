@@ -175,19 +175,35 @@ async def renew_server():
             await page.screenshot(path='final_result.png')
             logger.info("已保存最终结果截图: final_result.png")
             
+            # 检查页面响应
+            page_content = await page.content()
+            page_text = await page.evaluate("() => document.body.innerText")
+            
+            logger.info(f"页面文本内容: {page_text[:500]}")  # 打印前500字符
+            
+            # 检查是否在冷却期
+            cooldown_messages = [
+                "cooldown",
+                "try again in",
+                "wait"
+            ]
+            
+            is_cooldown = any(msg.lower() in page_text.lower() for msg in cooldown_messages)
+            
+            if is_cooldown:
+                logger.info("⏰ 续期在冷却期中（1小时内已经续期过）")
+                logger.info("这是正常的！服务器已经在运行中，无需担心")
+                return True  # 这也算是成功的情况
+            
             # 检查是否有成功消息
             success_messages = [
                 "Server renewed",
                 "already running",
                 "renewed, but the server is already running",
                 "extended",
-                "started"
+                "started",
+                "renewed successfully"
             ]
-            
-            page_content = await page.content()
-            page_text = await page.evaluate("() => document.body.innerText")
-            
-            logger.info(f"页面文本内容: {page_text[:500]}")  # 打印前500字符
             
             success = any(msg.lower() in page_content.lower() or msg.lower() in page_text.lower() 
                          for msg in success_messages)
