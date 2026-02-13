@@ -1,0 +1,36 @@
+name: Auto Renew Server
+
+on:
+  schedule:
+    # 每小时运行一次（在每小时的第5分钟）
+    - cron: '5 * * * *'
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  renew:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        pip install playwright
+        playwright install chromium
+        
+    - name: Run renewal script
+      run: python renew.py
+      
+    - name: Upload logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: renewal-logs-${{ github.run_number }}
+        path: renewal.log
+        retention-days: 7
